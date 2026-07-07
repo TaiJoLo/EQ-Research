@@ -149,16 +149,26 @@ var array<int> boCandidateIndexes = array.new<int>()
 var array<int> dirtyRenderIndexes = array.new<int>()
 var int nextId = FIRST_LEVEL_ID
 
+queueFreshCandidate(int levelIndex) =>
+    array.push(freshCandidateIndexes, levelIndex)
+
+queueBOCandidate(int levelIndex) =>
+    array.push(boCandidateIndexes, levelIndex)
+
+queueDirtyRender(int levelIndex) =>
+    if not array.includes(dirtyRenderIndexes, levelIndex)
+        array.push(dirtyRenderIndexes, levelIndex)
+
 addLevel(Level level) =>
     int levelIndex = array.size(allLevels)
     array.push(allLevels, level)
-    array.push(dirtyRenderIndexes, levelIndex)
+    queueDirtyRender(levelIndex)
 
     if level.fresh
-        array.push(freshCandidateIndexes, levelIndex)
+        queueFreshCandidate(levelIndex)
 
     if level.levelType == LEVEL_CLASSIC
-        array.push(boCandidateIndexes, levelIndex)
+        queueBOCandidate(levelIndex)
 
 // ---------------------------------------------------------------------------
 // Lifecycle
@@ -194,7 +204,7 @@ updateLevels() =>
             if checkLevelTouch(level)
                 level.fresh := false
                 array.set(allLevels, levelIndex, level)
-                array.push(dirtyRenderIndexes, levelIndex)
+                queueDirtyRender(levelIndex)
                 array.remove(freshCandidateIndexes, candidateIndex)
 
             candidateIndex -= INDEX_STEP

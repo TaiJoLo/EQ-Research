@@ -124,7 +124,24 @@ A BO Level must be created only once on the first confirmed break.
 
 ## Milestone 5
 
-Break Lifecycle
+
+Engine Refactor
+
+Goal
+
+Freeze Engine Architecture.
+
+Introduce stable queue-based engine infrastructure.
+
+No new trading functionality.
+
+Deliverables
+
+- Stable Level Manager API
+- Stable Queue API
+- Stable Renderer API
+- Cleaner candidate queues
+- No changes to market logic
 
 ---
 
