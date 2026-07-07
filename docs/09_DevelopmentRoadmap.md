@@ -80,6 +80,26 @@ In Progress
 
 Fresh Lifecycle
 
+Goal
+
+Implement the first lifecycle logic for Levels.
+
+Definition of Done
+
+□ Detect first touch for Support Levels.
+
+□ Detect first touch for Resistance Levels.
+
+□ Ignore the creation bar.
+
+□ Update fresh from true to false after first touch.
+
+□ Renderer only displays Levels where fresh == true.
+
+□ Main execution flow remains unchanged.
+
+□ No changes to Detector, Creation, or Data Model.
+
 ---
 
 ## Milestone 4

@@ -113,8 +113,33 @@ addLevel(Level level) =>
 // Lifecycle
 // ---------------------------------------------------------------------------
 
+isSupportTouched(Level level) =>
+    low <= level.price
+
+isResistanceTouched(Level level) =>
+    high >= level.price
+
+checkLevelTouch(Level level) =>
+    bool touched = false
+
+    if bar_index > level.creationBar
+        if level.direction == SUPPORT
+            touched := isSupportTouched(level)
+        else if level.direction == RESISTANCE
+            touched := isResistanceTouched(level)
+
+    touched
+
 updateLevels() =>
-    false
+    int levelCount = array.size(allLevels)
+
+    if levelCount > 0
+        for levelIndex = 0 to levelCount - 1
+            Level level = array.get(allLevels, levelIndex)
+
+            if level.fresh and checkLevelTouch(level)
+                level.fresh := false
+                array.set(allLevels, levelIndex, level)
 
 // ---------------------------------------------------------------------------
 // Renderer
@@ -134,6 +159,9 @@ ensureRenderedCapacity(array<bool> rendered, int requiredSize) =>
     while array.size(rendered) < requiredSize
         array.push(rendered, false)
 
+shouldRenderLevel(Level level) =>
+    level.valid and level.active and level.fresh
+
 renderLevel(Level level, array<line> lines, array<bool> rendered) =>
     int lineIndex = level.id
 
@@ -141,9 +169,11 @@ renderLevel(Level level, array<line> lines, array<bool> rendered) =>
     ensureRenderedCapacity(rendered, lineIndex + LINE_END_OFFSET)
 
     bool alreadyRendered = array.get(rendered, lineIndex)
+    line levelLine = array.get(lines, lineIndex)
+    bool displayLevel = shouldRenderLevel(level)
 
-    if not alreadyRendered
-        line levelLine = line.new(
+    if displayLevel and not alreadyRendered
+        levelLine := line.new(
              level.creationBar,
              level.price,
              level.creationBar + LINE_END_OFFSET,
@@ -154,6 +184,9 @@ renderLevel(Level level, array<line> lines, array<bool> rendered) =>
              width = LEVEL_LINE_WIDTH)
         array.set(lines, lineIndex, levelLine)
         array.set(rendered, lineIndex, true)
+    else if not displayLevel and not na(levelLine)
+        line.delete(levelLine)
+        array.set(lines, lineIndex, na)
 
 renderLevels(array<Level> levels, array<line> lines, array<bool> rendered) =>
     int levelCount = array.size(levels)
@@ -178,3 +211,5 @@ if barstate.isconfirmed
         nextId += 1
 
 renderLevels(allLevels, levelLines, renderedLevels)
+
+plot(na, title = "EQ Engine Compile Anchor", display = display.none)

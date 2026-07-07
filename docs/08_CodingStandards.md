@@ -83,6 +83,65 @@ Do not reorder existing fields unless absolutely necessary.
 2. State
 3. Runtime Objects
 
+## Level Identity
+
+A Level never changes its identity after creation.
+
+Classic Levels never become BO Levels.
+
+Gap Levels never become Classic Levels.
+
+New market structures must create new Levels instead of modifying existing ones.
+
+A Level's `levelType` is immutabl
+
+A Level may change its lifecycle state, but never its identity.
+
+Allowed:
+- fresh
+- active
+- valid
+
+Immutable:
+- id
+- price
+- direction
+- levelType
+- creationBar
+
+## Lifecycle Rules
+
+Lifecycle is responsible only for updating Level state.
+
+Lifecycle may update:
+
+- fresh
+- active
+- valid
+
+Lifecycle must never:
+
+- create Levels
+- delete Levels
+- change Level identity
+- perform rendering
+
+## State Transition
+
+Lifecycle state changes must be explicit.
+
+Allowed transitions:
+
+fresh:
+true → false
+
+active:
+true → false
+
+valid:
+true → false
+
+Reverse transitions are not allowed unless explicitly defined by a future milestone.
 
 # Engine Design Rules
 
