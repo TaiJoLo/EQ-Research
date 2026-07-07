@@ -38,268 +38,106 @@ Renderer
 
 ---
 
-# Milestone 1
+## Milestone 1
 
-## Classic Level Detection
+Classic Detection
+
+Deliverables
+
+- Classic Level detection
+- Classic Level rendering
+- Generic Level data model
+- TradingView visualization
+
+Status
+
+Completed
+
+---
+
+## Milestone 2
+
+Engine Foundation
+
+Deliverables
+
+- Stable Engine architecture
+- Detector module
+- Lifecycle module (framework only)
+- Level Manager
+- Renderer
+- Generic Level data model
+- Main execution pipeline
+- Production-quality code structure
 
 Status
 
 In Progress
 
-Objectives
+---
 
-- Detect Classic Support
-- Detect Classic Resistance
-- Ignore Doji
-- Require adjacent candles only
-- Confirm only after the second candle closes
-- Store every detected Level
-- Draw detected Levels
+## Milestone 3
 
-Deliverables
-
-- Classic detection
-- Level data structure
-- Initial Renderer
+Fresh Lifecycle
 
 ---
 
+## Milestone 4
 
-
-# Milestone 2
-
-
-
-## Level Lifecycle
-
-Objectives
-
-Implement complete lifecycle management.
-
-Features
-
-- Fresh
-- Reject
-- Break
-- Active
-- Valid
-
-Deliverables
-
-- Level Manager
-- Active Level filtering
-- Automatic state updates
+Reject Lifecycle
 
 ---
 
+## Milestone 5
 
-
-# Milestone 3
-
-
-
-## BO Levels
-
-Objectives
-
-Implement Break-Out Levels.
-
-Features
-
-- Classic → BO
-- Direction reversal
-- Fresh BO
-- BO lifecycle
-
-Deliverables
-
-- BO detection
-- BO state management
+Break Lifecycle
 
 ---
 
+## Milestone 6
 
-
-# Milestone 4
-
-
-
-## HNS Levels
-
-Objectives
-
-Implement HNS Levels.
-
-Features
-
-- BO → HNS
-- HNS lifecycle
-- HNS expiration
-
-Deliverables
-
-- HNS detection
-- HNS state management
+BO Levels
 
 ---
 
+## Milestone 7
 
-
-# Milestone 5
-
-
-
-## GAP Levels
-
-Objectives
-
-Implement GAP Levels.
-
-Features
-
-- GAP Support
-- GAP Resistance
-- GAP lifecycle
-
-Deliverables
-
-- GAP detection
-- GAP management
+HNS Levels
 
 ---
 
+## Milestone 8
 
-
-# Milestone 6
-
-
-
-## Multi-Timeframe Engine
-
-Objectives
-
-Synchronize Levels across multiple timeframes.
-
-Features
-
-- HTF Level collection
-- LTF Level collection
-- Price matching
-- Level synchronization
-
-Deliverables
-
-- Multi-timeframe database
-- Level matching engine
+GAP Levels
 
 ---
 
+## Milestone 9
 
-
-# Milestone 7
-
-
-
-## EQ Engine
-
-Objectives
-
-Generate EQ candidates.
-
-Features
-
-- Classic + Classic
-- Classic + BO
-- Classic + GAP
-- GAP + GAP
-- BO + BO
-- HNS combinations
-
-Deliverables
-
-- EQ detection
-- EQ database
+EQ Engine v1.0
 
 ---
 
+## Milestone 10
 
-
-# Milestone 8
-
-
-
-## Strategy Engine
-
-Objectives
-
-Convert EQ into trading signals.
-
-Features
-
-- Entry rules
-- Stop Loss
-- Take Profit
-- Risk Management
-
-Deliverables
-
-- Tradable strategy
-- Signal generation
+Strategy Engine
 
 ---
 
+## Milestone 11
 
-
-# Milestone 9
-
-
-
-## Research Framework
-
-Objectives
-
-Evaluate strategy performance.
-
-Features
-
-- Parameter optimization
-- EQ combination comparison
-- SL optimization
-- TP optimization
-- Multi-timeframe comparison
-
-Deliverables
-
-- Research reports
-- Performance statistics
+TradingView Backtesting
 
 ---
 
+## Milestone 12
 
+Python Research Engine
 
-# Milestone 10
-
-
-
-## Production Release
-
-Objectives
-
-Prepare a stable production version.
-
-Features
-
-- Performance optimization
-- Documentation review
-- Code cleanup
-- Version tagging
-
-Deliverables
-
-- Version 1.0
-- Stable release
-
----
+- Research
+- Optimization
+- Grid Search
+- Walk Forward Analysis
 
 
 

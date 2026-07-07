@@ -26,7 +26,7 @@ Rendering and trading decisions belong to separate modules.
 
 | creationBar | int | Bar index where the Level is confirmed |
 
-| levelType | string | Classic / Gap / BO / HNS |
+| levelType | int | Classic / Gap / BO / HNS |
 
 | fresh | bool | Whether the Level has never been tested |
 
@@ -36,9 +36,27 @@ Rendering and trading decisions belong to separate modules.
 
 | id | int | Unique identifier |
 
+## Level Type Enumeration
+
+Level Type is stored as an integer.
+
+Values:
+
+LEVEL_CLASSIC = 1
+
+LEVEL_GAP = 2
+
+LEVEL_BO = 3
+
+LEVEL_HNS = 4
+
 ---
 
+
+
 # Field Groups
+
+
 
 ## Core Market Data
 
@@ -54,6 +72,8 @@ Without them, a Level does not exist.
 
 ---
 
+
+
 ## State
 
 levelType
@@ -68,6 +88,8 @@ These fields describe the current lifecycle of the Level.
 
 ---
 
+
+
 ## Runtime Metadata
 
 id
@@ -75,6 +97,8 @@ id
 Used only for tracking the Level internally.
 
 ---
+
+
 
 # Important Principles
 

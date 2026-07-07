@@ -1,0 +1,180 @@
+//@version=6
+indicator("EQ Engine - Classic Levels", overlay = true, max_lines_count = 500)
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const int LINE_END_OFFSET = 1
+const int FIRST_LEVEL_ID = 0
+
+const bool INITIAL_FRESH = true
+const bool INITIAL_ACTIVE = true
+const bool INITIAL_VALID = true
+
+const color SUPPORT_COLOR = color.teal
+const color RESISTANCE_COLOR = color.orange
+
+const int LEVEL_LINE_WIDTH = 1
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+const int SUPPORT = 1
+const int RESISTANCE = -1
+
+const int LEVEL_CLASSIC = 1
+const int LEVEL_GAP = 2
+const int LEVEL_BO = 3
+const int LEVEL_HNS = 4
+
+// ---------------------------------------------------------------------------
+// Data Model
+// ---------------------------------------------------------------------------
+
+type Level
+    int id
+    float price
+    int direction
+    int creationBar
+    int levelType
+    bool fresh
+    bool active
+    bool valid
+
+// ---------------------------------------------------------------------------
+// Candle Functions
+// ---------------------------------------------------------------------------
+
+isBullCandle(float candleOpen, float candleClose) =>
+    candleClose > candleOpen
+
+isBearCandle(float candleOpen, float candleClose) =>
+    candleClose < candleOpen
+
+isDojiCandle(float candleOpen, float candleClose) =>
+    candleClose == candleOpen
+
+// ---------------------------------------------------------------------------
+// Detector
+// ---------------------------------------------------------------------------
+
+detectClassic() =>
+    bool detected = false
+    float levelPrice = na
+    int direction = na
+
+    if bar_index > 0
+        bool previousDoji = isDojiCandle(open[1], close[1])
+        bool currentDoji = isDojiCandle(open, close)
+
+        if not previousDoji and not currentDoji
+            bool supportDetected = isBearCandle(open[1], close[1]) and isBullCandle(open, close)
+            bool resistanceDetected = isBullCandle(open[1], close[1]) and isBearCandle(open, close)
+
+            if supportDetected
+                detected := true
+                levelPrice := close[1]
+                direction := SUPPORT
+            else if resistanceDetected
+                detected := true
+                levelPrice := close[1]
+                direction := RESISTANCE
+
+    [detected, levelPrice, direction]
+
+// ---------------------------------------------------------------------------
+// Creation
+// ---------------------------------------------------------------------------
+
+createLevel(int levelId, float levelPrice, int direction, int creationBar) =>
+    Level.new(
+         levelId,
+         levelPrice,
+         direction,
+         creationBar,
+         LEVEL_CLASSIC,
+         INITIAL_FRESH,
+         INITIAL_ACTIVE,
+         INITIAL_VALID)
+
+// ---------------------------------------------------------------------------
+// Level Manager
+// ---------------------------------------------------------------------------
+
+var array<Level> allLevels = array.new<Level>()
+var int nextId = FIRST_LEVEL_ID
+
+addLevel(Level level) =>
+    array.push(allLevels, level)
+
+// ---------------------------------------------------------------------------
+// Lifecycle
+// ---------------------------------------------------------------------------
+
+updateLevels() =>
+    false
+
+// ---------------------------------------------------------------------------
+// Renderer
+// ---------------------------------------------------------------------------
+
+var array<line> levelLines = array.new<line>()
+var array<bool> renderedLevels = array.new<bool>()
+
+getLevelColor(int direction) =>
+    direction == SUPPORT ? SUPPORT_COLOR : RESISTANCE_COLOR
+
+ensureLineCapacity(array<line> lines, int requiredSize) =>
+    while array.size(lines) < requiredSize
+        array.push(lines, na)
+
+ensureRenderedCapacity(array<bool> rendered, int requiredSize) =>
+    while array.size(rendered) < requiredSize
+        array.push(rendered, false)
+
+renderLevel(Level level, array<line> lines, array<bool> rendered) =>
+    int lineIndex = level.id
+
+    ensureLineCapacity(lines, lineIndex + LINE_END_OFFSET)
+    ensureRenderedCapacity(rendered, lineIndex + LINE_END_OFFSET)
+
+    bool alreadyRendered = array.get(rendered, lineIndex)
+
+    if not alreadyRendered
+        line levelLine = line.new(
+             level.creationBar,
+             level.price,
+             level.creationBar + LINE_END_OFFSET,
+             level.price,
+             xloc = xloc.bar_index,
+             extend = extend.right,
+             color = getLevelColor(level.direction),
+             width = LEVEL_LINE_WIDTH)
+        array.set(lines, lineIndex, levelLine)
+        array.set(rendered, lineIndex, true)
+
+renderLevels(array<Level> levels, array<line> lines, array<bool> rendered) =>
+    int levelCount = array.size(levels)
+
+    if levelCount > 0
+        for levelIndex = 0 to levelCount - 1
+            Level level = array.get(levels, levelIndex)
+            renderLevel(level, lines, rendered)
+
+// ---------------------------------------------------------------------------
+// Main
+// ---------------------------------------------------------------------------
+
+if barstate.isconfirmed
+    updateLevels()
+
+    [detected, levelPrice, direction] = detectClassic()
+
+    if detected
+        Level level = createLevel(nextId, levelPrice, direction, bar_index)
+        addLevel(level)
+        nextId += 1
+
+renderLevels(allLevels, levelLines, renderedLevels)

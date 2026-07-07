@@ -18,20 +18,23 @@ No module may depend on a higher-level module.
 
 # Overall Architecture
 
-Market Data
-      │
-      ▼
-Level Engine
-(Detector + Level Manager)
-      │
-      ▼
-EQ Engine
-      │
-      ▼
+Market Data  
+  
+↓  
+  
+Detector  
+  
+↓  
+  
+Level Manager  
+  
+↓  
+  
+Renderer  
+  
+↓  
+  
 Strategy
-      │
-      ▼
-Renderer
 
 ---
 
