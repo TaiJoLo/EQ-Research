@@ -113,6 +113,13 @@ Create BO Levels using the generic createLevel() function.
 
 Do not create a dedicated createBOLevel().
 
+A Level may generate at most one BO Level.
+
+Once a Level has generated a BO Level,
+it must never generate another BO Level.
+
+A BO Level must be created only once on the first confirmed break. 
+
 ---
 
 ## Milestone 5

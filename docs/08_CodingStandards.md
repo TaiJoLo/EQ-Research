@@ -93,7 +93,7 @@ Gap Levels never become Classic Levels.
 
 New market structures must create new Levels instead of modifying existing ones.
 
-A Level's `levelType` is immutabl
+A Level's `levelType` is immutable.
 
 A Level may change its lifecycle state, but never its identity.
 
@@ -111,7 +111,7 @@ Immutable:
 
 ## Generic Level Creation
 
-All Detectors must use the same createLevel() function.
+All new Levels must be created through the generic createLevel() function.
 
 createLevel() must receive:
 
@@ -128,6 +128,22 @@ Never create:
 - createGapLevel()
 - createHNSLevel()
 
+---
+
+## Generic Creation Interface
+
+New Levels must be created only through createLevel().
+
+Never instantiate Level objects directly.
+
+Never call:
+
+Level.new()
+
+outside the Creation module.
+
+---
+
 ## Generic Detector Interface
 
 Every Detector must return:
@@ -143,6 +159,28 @@ Do not extend the Detector interface.
 
 Additional information belongs to Lifecycle or Strategy.
 
+
+
+## Market Structure Independence
+
+Market Structure detection must never depend on lifecycle state.
+
+Examples:
+
+- BO detection must not depend on fresh.
+- Gap detection must not depend on fresh.
+- HNS detection must not depend on fresh.
+
+Lifecycle state and Market Structure are independent concepts.
+
+## Detector Ownership
+
+Detectors may read Engine data.
+
+Detectors must never modify Engine data.
+
+Any state update belongs to Lifecycle.
+
 ## Lifecycle Rules
 
 Lifecycle is responsible only for updating Level state.
@@ -152,6 +190,7 @@ Lifecycle may update:
 - fresh
 - active
 - valid
+- boCreated
 
 Lifecycle must never:
 
@@ -176,6 +215,14 @@ valid:
 true → false
 
 Reverse transitions are not allowed unless explicitly defined by a future milestone.
+
+## Regression Rule
+
+A new milestone must never break functionality implemented in previous milestones.
+
+If a regression is introduced, it must be fixed before implementing additional features.
+
+Preserving existing behavior has higher priority than adding new functionality.
 
 # Engine Design Rules
 
@@ -208,7 +255,11 @@ Detector
 
 ↓
 
-Level Manager
+Creation
+
+↓
+
+Lifecycle
 
 ↓
 
@@ -224,17 +275,19 @@ Modules must never modify upstream modules.
 
 ## 3. Detector Never Updates Existing Levels
 
-Detector is only responsible for creating new Levels.
+Detector is responsible only for detecting market structure.
 
 Detector must never:
 
-- update Fresh
-- update Reject
-- update Break
-- update BO
-- update HNS
+- create Levels
+- update existing Levels
+- perform rendering
 
-These belong to Lifecycle.
+Detector returns only detection results.
+
+Creation belongs to the Creation module.
+
+Lifecycle updates existing Levels.
 
 ---
 
@@ -336,7 +389,24 @@ Future milestones should only add new modules without restructuring Main.
 
 ---
 
-## 10. Python Compatibility
+## 10. Architecture Stability
+
+The Engine architecture is considered stable.
+
+Future milestones should extend the existing architecture rather than restructure it.
+
+Prefer adding new:
+
+- Detectors
+- Lifecycle logic
+- Rendering logic
+- Strategy modules
+
+instead of modifying the Engine pipeline or existing module responsibilities.
+
+---
+
+## 11. Python Compatibility
 
 All Engine logic should be designed to allow direct migration to Python with minimal changes.
 

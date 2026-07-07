@@ -7,10 +7,12 @@ indicator("EQ Engine - Classic Levels", overlay = true, max_lines_count = 500)
 
 const int LINE_END_OFFSET = 1
 const int FIRST_LEVEL_ID = 0
+const int INDEX_STEP = 1
 
 const bool INITIAL_FRESH = true
 const bool INITIAL_ACTIVE = true
 const bool INITIAL_VALID = true
+const bool INITIAL_BO_CREATED = false
 
 const color SUPPORT_COLOR = color.teal
 const color RESISTANCE_COLOR = color.orange
@@ -42,6 +44,7 @@ type Level
     bool fresh
     bool active
     bool valid
+    bool boCreated
 
 // ---------------------------------------------------------------------------
 // Candle Functions
@@ -87,6 +90,39 @@ detectClassic() =>
 
     [detected, levelPrice, direction, levelType]
 
+isSupportBroken(Level level) =>
+    close < level.price
+
+isResistanceBroken(Level level) =>
+    close > level.price
+
+isBOCandidate(Level level) =>
+    level.levelType == LEVEL_CLASSIC and not level.boCreated and bar_index > level.creationBar
+
+detectBO(array<Level> levels, array<int> boCandidates) =>
+    bool detected = false
+    float levelPrice = na
+    int direction = na
+    int levelType = LEVEL_BO
+    int candidateCount = array.size(boCandidates)
+
+    if candidateCount > 0
+        for candidateIndex = FIRST_LEVEL_ID to candidateCount - INDEX_STEP
+            int levelIndex = array.get(boCandidates, candidateIndex)
+            Level level = array.get(levels, levelIndex)
+
+            if not detected and isBOCandidate(level)
+                if level.direction == SUPPORT and isSupportBroken(level)
+                    detected := true
+                    levelPrice := level.price
+                    direction := RESISTANCE
+                else if level.direction == RESISTANCE and isResistanceBroken(level)
+                    detected := true
+                    levelPrice := level.price
+                    direction := SUPPORT
+
+    [detected, levelPrice, direction, levelType]
+
 // ---------------------------------------------------------------------------
 // Creation
 // ---------------------------------------------------------------------------
@@ -100,17 +136,29 @@ createLevel(int levelId, float levelPrice, int direction, int levelType, int cre
          levelType,
          INITIAL_FRESH,
          INITIAL_ACTIVE,
-         INITIAL_VALID)
+         INITIAL_VALID,
+         INITIAL_BO_CREATED)
 
 // ---------------------------------------------------------------------------
 // Level Manager
 // ---------------------------------------------------------------------------
 
 var array<Level> allLevels = array.new<Level>()
+var array<int> freshCandidateIndexes = array.new<int>()
+var array<int> boCandidateIndexes = array.new<int>()
+var array<int> dirtyRenderIndexes = array.new<int>()
 var int nextId = FIRST_LEVEL_ID
 
 addLevel(Level level) =>
+    int levelIndex = array.size(allLevels)
     array.push(allLevels, level)
+    array.push(dirtyRenderIndexes, levelIndex)
+
+    if level.fresh
+        array.push(freshCandidateIndexes, levelIndex)
+
+    if level.levelType == LEVEL_CLASSIC
+        array.push(boCandidateIndexes, levelIndex)
 
 // ---------------------------------------------------------------------------
 // Lifecycle
@@ -134,15 +182,39 @@ checkLevelTouch(Level level) =>
     touched
 
 updateLevels() =>
-    int levelCount = array.size(allLevels)
+    int candidateCount = array.size(freshCandidateIndexes)
 
-    if levelCount > 0
-        for levelIndex = 0 to levelCount - 1
+    if candidateCount > 0
+        int candidateIndex = candidateCount - INDEX_STEP
+
+        while candidateIndex >= FIRST_LEVEL_ID
+            int levelIndex = array.get(freshCandidateIndexes, candidateIndex)
             Level level = array.get(allLevels, levelIndex)
 
-            if level.fresh and checkLevelTouch(level)
+            if checkLevelTouch(level)
                 level.fresh := false
                 array.set(allLevels, levelIndex, level)
+                array.push(dirtyRenderIndexes, levelIndex)
+                array.remove(freshCandidateIndexes, candidateIndex)
+
+            candidateIndex -= INDEX_STEP
+
+markBOCreated(array<Level> levels, array<int> boCandidates, float levelPrice, int boDirection) =>
+    int candidateCount = array.size(boCandidates)
+    int sourceDirection = boDirection == SUPPORT ? RESISTANCE : SUPPORT
+    bool updated = false
+
+    if candidateCount > 0
+        for candidateIndex = FIRST_LEVEL_ID to candidateCount - INDEX_STEP
+            if not updated
+                int levelIndex = array.get(boCandidates, candidateIndex)
+                Level level = array.get(levels, levelIndex)
+
+                if isBOCandidate(level) and level.price == levelPrice and level.direction == sourceDirection
+                    level.boCreated := true
+                    array.set(levels, levelIndex, level)
+                    array.remove(boCandidates, candidateIndex)
+                    updated := true
 
 // ---------------------------------------------------------------------------
 // Renderer
@@ -190,14 +262,18 @@ renderLevel(Level level, array<line> lines, array<bool> rendered) =>
     else if not displayLevel and not na(levelLine)
         line.delete(levelLine)
         array.set(lines, lineIndex, na)
+        array.set(rendered, lineIndex, false)
 
-renderLevels(array<Level> levels, array<line> lines, array<bool> rendered) =>
-    int levelCount = array.size(levels)
+renderDirtyLevels(array<Level> levels, array<int> dirtyIndexes, array<line> lines, array<bool> rendered) =>
+    int dirtyCount = array.size(dirtyIndexes)
 
-    if levelCount > 0
-        for levelIndex = 0 to levelCount - 1
+    if dirtyCount > 0
+        for dirtyIndex = FIRST_LEVEL_ID to dirtyCount - INDEX_STEP
+            int levelIndex = array.get(dirtyIndexes, dirtyIndex)
             Level level = array.get(levels, levelIndex)
             renderLevel(level, lines, rendered)
+
+        array.clear(dirtyIndexes)
 
 // ---------------------------------------------------------------------------
 // Main
@@ -213,6 +289,14 @@ if barstate.isconfirmed
         addLevel(level)
         nextId += 1
 
-renderLevels(allLevels, levelLines, renderedLevels)
+    [boDetected, boPrice, boDirection, boLevelType] = detectBO(allLevels, boCandidateIndexes)
+
+    if boDetected
+        Level boLevel = createLevel(nextId, boPrice, boDirection, boLevelType, bar_index)
+        addLevel(boLevel)
+        markBOCreated(allLevels, boCandidateIndexes, boPrice, boDirection)
+        nextId += 1
+
+renderDirtyLevels(allLevels, dirtyRenderIndexes, levelLines, renderedLevels)
 
 plot(na, title = "EQ Engine Compile Anchor", display = display.none)
