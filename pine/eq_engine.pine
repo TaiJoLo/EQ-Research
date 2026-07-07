@@ -64,6 +64,7 @@ detectClassic() =>
     bool detected = false
     float levelPrice = na
     int direction = na
+    int levelType = LEVEL_CLASSIC
 
     if bar_index > 0
         bool previousDoji = isDojiCandle(open[1], close[1])
@@ -77,24 +78,26 @@ detectClassic() =>
                 detected := true
                 levelPrice := close[1]
                 direction := SUPPORT
+                levelType := LEVEL_CLASSIC
             else if resistanceDetected
                 detected := true
                 levelPrice := close[1]
                 direction := RESISTANCE
+                levelType := LEVEL_CLASSIC
 
-    [detected, levelPrice, direction]
+    [detected, levelPrice, direction, levelType]
 
 // ---------------------------------------------------------------------------
 // Creation
 // ---------------------------------------------------------------------------
 
-createLevel(int levelId, float levelPrice, int direction, int creationBar) =>
+createLevel(int levelId, float levelPrice, int direction, int levelType, int creationBar) =>
     Level.new(
          levelId,
          levelPrice,
          direction,
          creationBar,
-         LEVEL_CLASSIC,
+         levelType,
          INITIAL_FRESH,
          INITIAL_ACTIVE,
          INITIAL_VALID)
@@ -203,10 +206,10 @@ renderLevels(array<Level> levels, array<line> lines, array<bool> rendered) =>
 if barstate.isconfirmed
     updateLevels()
 
-    [detected, levelPrice, direction] = detectClassic()
+    [detected, levelPrice, direction, levelType] = detectClassic()
 
     if detected
-        Level level = createLevel(nextId, levelPrice, direction, bar_index)
+        Level level = createLevel(nextId, levelPrice, direction, levelType, bar_index)
         addLevel(level)
         nextId += 1
 

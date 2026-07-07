@@ -104,7 +104,14 @@ Definition of Done
 
 ## Milestone 4
 
-Reject Lifecycle
+
+Goal
+
+Implement Break Detection.
+
+Create BO Levels using the generic createLevel() function.
+
+Do not create a dedicated createBOLevel().
 
 ---
 

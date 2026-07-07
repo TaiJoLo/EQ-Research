@@ -109,6 +109,40 @@ Immutable:
 - levelType
 - creationBar
 
+## Generic Level Creation
+
+All Detectors must use the same createLevel() function.
+
+createLevel() must receive:
+
+- id
+- price
+- direction
+- levelType
+- creationBar
+
+Never create:
+
+- createClassicLevel()
+- createBOLevel()
+- createGapLevel()
+- createHNSLevel()
+
+## Generic Detector Interface
+
+Every Detector must return:
+
+(
+    detected,
+    price,
+    direction,
+    levelType
+)
+
+Do not extend the Detector interface.
+
+Additional information belongs to Lifecycle or Strategy.
+
 ## Lifecycle Rules
 
 Lifecycle is responsible only for updating Level state.
