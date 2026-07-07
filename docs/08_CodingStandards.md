@@ -224,6 +224,21 @@ If a regression is introduced, it must be fixed before implementing additional f
 
 Preserving existing behavior has higher priority than adding new functionality.
 
+## Candle Classification
+
+Bull Candle:
+close > open
+
+Bear Candle:
+close < open
+
+Doji:
+close == open
+
+Doji is neither Bull nor Bear.
+
+Detectors must explicitly exclude Doji unless a future Level definition specifies otherwise.
+
 # Engine Design Rules
 
 These rules are mandatory for every future implementation.

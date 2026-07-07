@@ -1,5 +1,5 @@
 //@version=6
-indicator("EQ Engine - Classic Levels", overlay = true, max_lines_count = 500)
+indicator("EQ Engine", overlay = true, max_lines_count = 500)
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -89,6 +89,31 @@ detectClassic() =>
                 levelPrice := close[1]
                 direction := RESISTANCE
                 levelType := LEVEL_CLASSIC
+
+    [detected, levelPrice, direction, levelType]
+
+detectGap() =>
+    bool detected = false
+    float levelPrice = na
+    int direction = na
+    int levelType = LEVEL_GAP
+
+    if bar_index > 0
+        bool previousDoji = isDojiCandle(open[1], close[1])
+        bool currentDoji = isDojiCandle(open, close)
+
+        if not previousDoji and not currentDoji
+            bool supportDetected = isBullCandle(open[1], close[1]) and isBullCandle(open, close)
+            bool resistanceDetected = isBearCandle(open[1], close[1]) and isBearCandle(open, close)
+
+            if supportDetected
+                detected := true
+                levelPrice := close[1]
+                direction := SUPPORT
+            else if resistanceDetected
+                detected := true
+                levelPrice := close[1]
+                direction := RESISTANCE
 
     [detected, levelPrice, direction, levelType]
 
@@ -353,6 +378,13 @@ if barstate.isconfirmed
     if detected
         Level level = createLevel(nextId, levelPrice, direction, levelType, bar_index)
         addLevel(level)
+        nextId += 1
+
+    [gapDetected, gapPrice, gapDirection, gapLevelType] = detectGap()
+
+    if gapDetected
+        Level gapLevel = createLevel(nextId, gapPrice, gapDirection, gapLevelType, bar_index)
+        addLevel(gapLevel)
         nextId += 1
 
     [boDetected, boPrice, boDirection, boLevelType] = detectBO(allLevels, boCandidateIndexes)

@@ -145,51 +145,12 @@ Deliverables
 
 ---
 
-## Milestone 6
-
-BO Levels
-
----
-
-## Milestone 7
-
-HNS Levels
-
----
-
-## Milestone 8
-
-GAP Levels
-
----
-
-## Milestone 9
-
-EQ Engine v1.0
-
----
-
-## Milestone 10
-
-Strategy Engine
-
----
-
-## Milestone 11
-
-TradingView Backtesting
-
----
-
-## Milestone 12
-
-Python Research Engine
-
-- Research
-- Optimization
-- Grid Search
-- Walk Forward Analysis
-
+Milestone 6 — GAP Levels
+Milestone 7 — HNS Levels
+Milestone 8 — EQ Engine v1.0
+Milestone 9 — Strategy Engine
+Milestone 10 — TradingView Backtesting
+Milestone 11 — Python Research Engine
 
 
 # Development Principles
@@ -223,3 +184,24 @@ Every completed milestone must include:
 - Code review
 
 Only after all checks pass may development continue to the next milestone.
+
+
+## Current Status
+
+Completed
+
+- ✅ Milestone 1 — Engine Skeleton
+- ✅ Milestone 2 — Classic Levels
+- ✅ Milestone 3 — Fresh Lifecycle
+- ✅ Milestone 4 — BO Levels
+- ✅ Milestone 5 — Queue API + Dirty Renderer + Renderer Text
+
+In Progress
+
+- 🚧 Milestone 6 — GAP Levels
+
+Next
+
+- HNS
+- EQ
+- Strategy
