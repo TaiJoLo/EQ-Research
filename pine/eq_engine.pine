@@ -6,6 +6,8 @@ indicator("EQ Engine - Classic Levels", overlay = true, max_lines_count = 500)
 // ---------------------------------------------------------------------------
 
 const int LINE_END_OFFSET = 1
+const int LINE_DISPLAY_OFFSET = 17
+const int TEXT_LABEL_OFFSET = 18
 const int FIRST_LEVEL_ID = 0
 const int INDEX_STEP = 1
 
@@ -232,6 +234,7 @@ markBOCreated(array<Level> levels, array<int> boCandidates, float levelPrice, in
 
 var array<line> levelLines = array.new<line>()
 var array<bool> renderedLevels = array.new<bool>()
+var array<label> levelTextLabels = array.new<label>()
 
 getLevelColor(int direction) =>
     direction == SUPPORT ? SUPPORT_COLOR : RESISTANCE_COLOR
@@ -240,48 +243,101 @@ ensureLineCapacity(array<line> lines, int requiredSize) =>
     while array.size(lines) < requiredSize
         array.push(lines, na)
 
+ensureLabelCapacity(array<label> labels, int requiredSize) =>
+    while array.size(labels) < requiredSize
+        array.push(labels, na)
+
 ensureRenderedCapacity(array<bool> rendered, int requiredSize) =>
     while array.size(rendered) < requiredSize
         array.push(rendered, false)
 
+getLevelTypeText(int levelType) =>
+    string levelTypeText = "?"
+
+    if levelType == LEVEL_CLASSIC
+        levelTypeText := "Classic"
+    else if levelType == LEVEL_BO
+        levelTypeText := "BO"
+    else if levelType == LEVEL_GAP
+        levelTypeText := "GAP"
+    else if levelType == LEVEL_HNS
+        levelTypeText := "HNS"
+
+    levelTypeText
+
+getDirectionText(int direction) =>
+    string directionText = "?"
+
+    if direction == SUPPORT
+        directionText := "S"
+    else if direction == RESISTANCE
+        directionText := "R"
+
+    directionText
+
+getLevelText(Level level) =>
+    getLevelTypeText(level.levelType) + "-" + getDirectionText(level.direction)
+
 shouldRenderLevel(Level level) =>
     level.valid and level.active and level.fresh
 
-renderLevel(Level level, array<line> lines, array<bool> rendered) =>
+renderLevel(Level level, array<line> lines, array<bool> rendered, array<label> textLabels) =>
     int lineIndex = level.id
 
     ensureLineCapacity(lines, lineIndex + LINE_END_OFFSET)
     ensureRenderedCapacity(rendered, lineIndex + LINE_END_OFFSET)
+    ensureLabelCapacity(textLabels, lineIndex + LINE_END_OFFSET)
 
     bool alreadyRendered = array.get(rendered, lineIndex)
     line levelLine = array.get(lines, lineIndex)
+    label textLabel = array.get(textLabels, lineIndex)
     bool displayLevel = shouldRenderLevel(level)
+    color levelColor = getLevelColor(level.direction)
 
     if displayLevel and not alreadyRendered
         levelLine := line.new(
              level.creationBar,
              level.price,
-             level.creationBar + LINE_END_OFFSET,
+             bar_index + LINE_DISPLAY_OFFSET,
              level.price,
              xloc = xloc.bar_index,
-             extend = extend.right,
-             color = getLevelColor(level.direction),
+             color = levelColor,
              width = LEVEL_LINE_WIDTH)
+        textLabel := label.new(
+             bar_index + TEXT_LABEL_OFFSET,
+             level.price,
+             text = getLevelText(level),
+             xloc = xloc.bar_index,
+             style = label.style_none,
+             color = color.new(color.white, 100),
+             textcolor = levelColor,
+             size = size.small)
         array.set(lines, lineIndex, levelLine)
+        array.set(textLabels, lineIndex, textLabel)
         array.set(rendered, lineIndex, true)
+    else if displayLevel and alreadyRendered and not na(textLabel)
+        if not na(levelLine)
+            line.set_x2(levelLine, bar_index + LINE_DISPLAY_OFFSET)
+        label.set_x(textLabel, bar_index + TEXT_LABEL_OFFSET)
+        label.set_y(textLabel, level.price)
+        label.set_text(textLabel, getLevelText(level))
+        label.set_textcolor(textLabel, levelColor)
     else if not displayLevel and not na(levelLine)
         line.delete(levelLine)
+        if not na(textLabel)
+            label.delete(textLabel)
         array.set(lines, lineIndex, na)
+        array.set(textLabels, lineIndex, na)
         array.set(rendered, lineIndex, false)
 
-renderDirtyLevels(array<Level> levels, array<int> dirtyIndexes, array<line> lines, array<bool> rendered) =>
+renderDirtyLevels(array<Level> levels, array<int> dirtyIndexes, array<line> lines, array<bool> rendered, array<label> textLabels) =>
     int dirtyCount = array.size(dirtyIndexes)
 
     if dirtyCount > 0
         for dirtyIndex = FIRST_LEVEL_ID to dirtyCount - INDEX_STEP
             int levelIndex = array.get(dirtyIndexes, dirtyIndex)
             Level level = array.get(levels, levelIndex)
-            renderLevel(level, lines, rendered)
+            renderLevel(level, lines, rendered, textLabels)
 
         array.clear(dirtyIndexes)
 
@@ -307,6 +363,6 @@ if barstate.isconfirmed
         markBOCreated(allLevels, boCandidateIndexes, boPrice, boDirection)
         nextId += 1
 
-renderDirtyLevels(allLevels, dirtyRenderIndexes, levelLines, renderedLevels)
+renderDirtyLevels(allLevels, dirtyRenderIndexes, levelLines, renderedLevels, levelTextLabels)
 
 plot(na, title = "EQ Engine Compile Anchor", display = display.none)
