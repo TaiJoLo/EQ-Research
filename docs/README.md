@@ -8,6 +8,7 @@ This repository is designed to separate:
 
 - Market Structure Engine
 - Trading Strategy
+- Execution
 - Research & Statistics
 
 The Engine should detect every valid market level without considering whether it should be traded.
@@ -23,6 +24,17 @@ docs/
 ```
 Specifications
 ```
+
+Key documentation:
+
+- 01_ProjectPhilosophy.md
+- 02_Engine.md
+- 04_DataModel.md
+- 07_SystemArchitecture.md
+- 08_CodingStandards.md
+- 09_DevelopmentRoadmap.md
+- 10_StrategyLifecycle.md
+- 11_StrategyResearch.md
 
 pine/
 
@@ -53,6 +65,8 @@ The Engine produces market structure.
 Visualization is handled by the TradingView Renderer.
 
 Trading decisions are handled by the Strategy module.
+
+Order and position lifecycle is handled by the Execution module.
 
 ---
 

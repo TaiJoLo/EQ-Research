@@ -1,22 +1,36 @@
 # Development Roadmap
 
-Version: 1.0
+Version: 2.0
 
 ---
 
 # Vision
 
-Build a professional, research-driven EQ trading framework.
+Build a professional, research-driven trading framework.
 
-The project is divided into independent milestones.
+The project evolves through independent milestones.
 
-Each milestone must be fully tested before moving to the next.
+Each milestone represents a complete deliverable.
 
-No feature should be implemented before its underlying layer is complete.
+A deliverable may be:
+
+- Specification
+- Data Model
+- Implementation
+- Validation
+- Research
+
+Future milestones may be added, removed, merged, split, or reordered as research evolves.
+
+Milestone IDs are permanent historical identifiers.
+
+They do not imply a fixed implementation order.
+
+The Roadmap is a living document.
 
 ---
 
-# Architecture
+# System Architecture
 
 Market Data
 
@@ -34,174 +48,307 @@ Strategy
 
 ↓
 
+Trade Plan
+
+↓
+
+Execution
+
+↓
+
 Renderer
 
 ---
 
-## Milestone 1
+# Completed Milestones
 
-Classic Detection
-
-Deliverables
-
-- Classic Level detection
-- Classic Level rendering
-- Generic Level data model
-- TradingView visualization
+## M001 — Classic Detection
 
 Status
 
 Completed
 
+Deliverables
+
+- Classic Level detection
+- Support / Resistance detection
+- Generic Level data model
+- TradingView visualization
+- Initial Engine prototype
+
 ---
 
-## Milestone 2
+## M002 — Engine Foundation
 
-Engine Foundation
+Status
+
+Completed
 
 Deliverables
 
 - Stable Engine architecture
 - Detector module
-- Lifecycle module (framework only)
 - Level Manager
-- Renderer
-- Generic Level data model
-- Main execution pipeline
-- Production-quality code structure
+- Renderer framework
+- Generic createLevel() API
+- Main Engine execution pipeline
+- Production-quality project structure
+
+---
+
+## M003 — Fresh Lifecycle
+
+Status
+
+Completed
+
+Deliverables
+
+- Fresh lifecycle
+- First-touch detection
+- Creation bar exclusion
+- Support / Resistance touch detection
+- Fresh state management
+- Renderer integration for Fresh Levels
+
+---
+
+## M004 — BO Levels
+
+Status
+
+Completed
+
+Deliverables
+
+- Break detection
+- BO Level creation
+- Generic createLevel() reuse
+- One BO per Classic Level
+- BO lifecycle integration
+- Break confirmation on candle close
+
+---
+
+## M005 — Engine Refactor
+
+Status
+
+Completed
+
+Deliverables
+
+- Stable Level Manager API
+- Queue-based architecture
+- Candidate queues
+- Dirty Renderer
+- Stable Renderer API
+- Engine cleanup
+- Production-ready Engine infrastructure
+
+---
+
+## M006 — GAP Levels
+
+Status
+
+Completed
+
+Deliverables
+
+- GAP Level detection
+- GAP rendering
+- GAP lifecycle integration
+- GAP support / resistance logic
+- Engine integration
+
+---
+
+## M007 — HNS Levels
+
+Status
+
+Completed
+
+Deliverables
+
+- HNS detection
+- HNS lifecycle
+- BO → HNS evolution
+- HNS freshness rules
+- HNS rendering
+- Engine lifecycle refinement
+- Market structure validation
+
+---
+
+## M008 — EQ Engine Specification
+
+Status
+
+Completed
+
+Deliverables
+
+- EQ Engine architecture
+- EQ Data Model
+- EQ creation rules
+- Snapshot design
+- Source immutability
+- Multi-timeframe architecture
+- Strategy boundary definition
+- Execution boundary definition
+- Renderer boundary definition
+- Trading Research Framework philosophy
+- Modular Strategy Policy architecture
+- Engine vs Strategy responsibility definition
+
+---
+
+# Current Milestone
+
+## M009 — Strategy Specification
 
 Status
 
 In Progress
 
----
-
-## Milestone 3
-
-Fresh Lifecycle
-
 Goal
 
-Implement the first lifecycle logic for Levels.
+Design a modular, research-driven Strategy framework.
 
-Definition of Done
+Current scope
 
-□ Detect first touch for Support Levels.
+- Strategy Specification v0.1
+- Trade Plan Data Model
+- Trade Data Model
+- Core Data Lifecycle
+- Entry Policy
+- Stop Policy
+- Target Policy
+- Position Management Policy
+- Reverse Policy
+- Re-entry Policy
+- Risk Policy
+- Session Policy (reserved)
+- Pending Order Lifecycle
+- Trade Archive
+- Future Policy extension design
 
-□ Detect first touch for Resistance Levels.
+The Strategy expresses trading hypotheses.
 
-□ Ignore the creation bar.
+Every trading hypothesis should be represented as an independent configurable Policy whenever practical.
 
-□ Update fresh from true to false after first touch.
+The Strategy produces Trade Plans.
 
-□ Renderer only displays Levels where fresh == true.
+Execution consumes Trade Plans.
 
-□ Main execution flow remains unchanged.
-
-□ No changes to Detector, Creation, or Data Model.
-
----
-
-## Milestone 4
-
-
-Goal
-
-Implement Break Detection.
-
-Create BO Levels using the generic createLevel() function.
-
-Do not create a dedicated createBOLevel().
-
-A Level may generate at most one BO Level.
-
-Once a Level has generated a BO Level,
-it must never generate another BO Level.
-
-A BO Level must be created only once on the first confirmed break. 
+Trades are archived for research and statistics.
 
 ---
 
-## Milestone 5
+# Planned Milestones
 
+The following milestones are planned but their implementation order is intentionally flexible.
 
-Engine Refactor
+Possible future milestones include:
 
-Goal
+- Trade Plan Data Model
+- EQ Engine Implementation
+- Strategy Implementation
+- Execution
+- TradingView Backtesting
+- Python Research Framework
+- Research Statistics
+- Optimization Framework
+- Walk Forward Testing
+- Monte Carlo Analysis
+- Live Trading Integration
+- Broker Integration
+- Multi-Account Execution
+- Dashboard
+- Additional Strategy Policies
 
-Freeze Engine Architecture.
+Future milestones may be:
 
-Introduce stable queue-based engine infrastructure.
+- Added
+- Removed
+- Split
+- Merged
+- Deferred
+- Reordered
 
-No new trading functionality.
-
-Deliverables
-
-- Stable Level Manager API
-- Stable Queue API
-- Stable Renderer API
-- Cleaner candidate queues
-- No changes to market logic
+according to research priorities.
 
 ---
-
-Milestone 6 — GAP Levels
-Milestone 7 — HNS Levels
-Milestone 8 — EQ Engine v1.0
-Milestone 9 — Strategy Engine
-Milestone 10 — TradingView Backtesting
-Milestone 11 — Python Research Engine
-
 
 # Development Principles
 
-Always complete lower layers before higher layers.
-
-Never allow Strategy to modify market structure.
-
-Never allow Renderer to modify market structure.
+Complete lower layers before higher layers whenever practical.
 
 The Engine owns market structure.
 
-The EQ Engine owns EQ generation.
+The EQ Engine owns confluence.
 
-The Strategy owns trading decisions.
+The Strategy owns trading hypotheses.
 
-The Renderer owns visualization.
+Trade Plan owns trading intent.
+
+Execution owns order and position lifecycle.
+
+Renderer owns visualization.
+
+Research should extend configurable Strategy Policies instead of modifying the Engine whenever practical.
+
+Every new trading idea should first be evaluated as a Strategy Policy before introducing new Engine functionality.
 
 ---
 
+# Validation Policy
 
+Every completed milestone must include the validations appropriate to its type.
 
-# Version Policy
+Specification Milestones
 
-Every completed milestone must include:
+- Documentation Review
+- Architecture Review
+- Internal Consistency Review
 
-- Git Commit
-- CHANGELOG update
-- Documentation update
-- TradingView validation
-- Code review
+Implementation Milestones
 
-Only after all checks pass may development continue to the next milestone.
+- Code Review
+- Unit Validation
+- TradingView Validation (when applicable)
 
+Research Milestones
 
-## Current Status
+- Statistical Validation
+- Backtesting
+- Performance Comparison
+
+Only after all required validation passes may a milestone be considered complete.
+
+---
+
+# Current Status
 
 Completed
 
-- ✅ Milestone 1 — Engine Skeleton
-- ✅ Milestone 2 — Classic Levels
-- ✅ Milestone 3 — Fresh Lifecycle
-- ✅ Milestone 4 — BO Levels
-- ✅ Milestone 5 — Queue API + Dirty Renderer + Renderer Text
-- ✅ Milestone 6 — GAP Levels
+- ✅ M001 — Classic Detection
+- ✅ M002 — Engine Foundation
+- ✅ M003 — Fresh Lifecycle
+- ✅ M004 — BO Levels
+- ✅ M005 — Engine Refactor
+- ✅ M006 — GAP Levels
+- ✅ M007 — HNS Levels
+- ✅ M008 — EQ Engine Specification
 
 In Progress
 
-- 🚧 HNS
+- 🚧 M009 — Strategy Specification
 
 Next
 
-- EQ
-- Strategy
+To be determined after M009 is completed and reviewed.
+
+Future milestones are selected based on research priorities rather than a fixed development sequence.

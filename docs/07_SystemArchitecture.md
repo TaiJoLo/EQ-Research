@@ -1,6 +1,6 @@
 # System Architecture
 
-Version: 0.2
+Version: 0.4
 
 ---
 
@@ -22,19 +22,81 @@ Market Data
   
 ↓  
   
-Detector  
+Level Engine
   
 ↓  
   
-Level Manager  
-  
-↓  
-  
-Renderer  
+EQ Engine
   
 ↓  
   
 Strategy
+  
+↓  
+  
+Trade Plan
+
+↓
+
+Execution
+
+↓
+
+Renderer
+
+---
+
+# Architecture vs Implementation
+
+The Level Engine Processing Pipeline is an internal implementation detail of the Level Engine.
+
+It is independent from the overall system architecture.
+
+The system architecture defines the responsibilities and communication between modules.
+
+The internal processing pipeline defines how a single module performs its work.
+
+---
+
+# Core Data Lifecycle
+
+The framework data lifecycle is:
+
+Market Data
+
+↓
+
+Level
+
+↓
+
+EQ
+
+↓
+
+Trade Plan
+
+↓
+
+Trade
+
+Each object has a single responsibility.
+
+Level:
+
+Market structure.
+
+EQ:
+
+Confluence.
+
+Trade Plan:
+
+Strategy decision / trading intent.
+
+Trade:
+
+Executed trade result and research record.
 
 ---
 
@@ -98,17 +160,19 @@ The Level Manager is the only module allowed to modify existing Levels.
 
 
 
-## 3. Research Engine
+## 3. EQ Engine
 
 Purpose
 
-Generate EQ candidates.
+Generate EQ confluence.
 
 Responsibilities
 
-Compare Levels across multiple timeframes.
+Consume Level Engine output.
 
-Research different EQ combinations.
+Compare Levels across configurable timeframes.
+
+Create EQ snapshots from valid Fresh source Levels.
 
 Examples
 
@@ -124,7 +188,15 @@ Gap + BO
 
 HNS + Classic
 
-The Research Engine never modifies Levels.
+The EQ Engine never modifies Levels.
+
+The EQ Engine is read-only with respect to the Level Engine.
+
+The EQ Engine must not hardcode Strategy timeframe combinations.
+
+The EQ Engine must support configurable timeframe combinations.
+
+EQ is not a Level Type and must not be stored inside allLevels.
 
 ---
 
@@ -140,21 +212,57 @@ Responsibilities
 
 Choose which EQ combinations are tradable.
 
-Manage TP.
+Produce Trade Plans.
 
-Manage SL.
+Express trading hypotheses through configurable Policies.
 
-Manage position sizing.
+Define planned entry, stop, target, position management, recovery, and risk parameters.
 
-Perform performance analysis.
+The Strategy consumes EQ output.
 
-The Strategy never changes market structure.
+The Strategy does not execute orders.
+
+The Strategy does not modify Levels.
+
+The Strategy does not modify EQs.
+
+The Strategy does not modify Engine state.
+
+The Strategy does not modify Execution state.
 
 ---
 
 
 
-## 5. Renderer
+## 5. Execution
+
+Purpose
+
+Execute trade plans produced by Strategy.
+
+Responsibilities
+
+Manage order lifecycle.
+
+Manage position lifecycle.
+
+Create Trades from executed Trade Plans.
+
+Archive closed Trades.
+
+Execution must not modify Engine state.
+
+Execution must not modify Levels.
+
+Execution must not modify EQs.
+
+Execution must not modify Strategy rules.
+
+---
+
+
+
+## 6. Renderer
 
 Purpose
 
@@ -184,19 +292,23 @@ Market Data
 
 ↓
 
-Detector
+Level Engine
 
 ↓
 
-Level Manager
-
-↓
-
-Research Engine
+EQ Engine
 
 ↓
 
 Strategy
+
+↓
+
+Trade Plan
+
+↓
+
+Execution
 
 ↓
 
@@ -208,19 +320,19 @@ Renderer
 
 # Dependency Rules
 
-Detector
+Level Engine
 
 ↓
 
-Level Manager
-
-↓
-
-Research Engine
+EQ Engine
 
 ↓
 
 Strategy
+
+↓
+
+Execution
 
 ↓
 
@@ -238,9 +350,11 @@ No module may reference a higher-level module.
 
 The Engine owns market structure.
 
-The Research Engine owns EQ discovery.
+The EQ Engine owns confluence.
 
 The Strategy owns trading decisions.
+
+Execution owns order and position lifecycle.
 
 The Renderer owns visualization.
 

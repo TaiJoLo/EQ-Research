@@ -389,7 +389,208 @@ boCreated and hnsCreated are internal Engine state.
 
 ---
 
-# 13. Design Principles
+# 13. EQ Engine
+
+The EQ Engine consumes Level Engine output.
+
+The EQ Engine never modifies the Level Engine.
+
+The EQ Engine is read-only with respect to Levels.
+
+The EQ Engine produces EQ output for Strategy and Renderer modules.
+
+---
+
+## EQ Definition
+
+EQ is not a Level Type.
+
+EQ is a Confluence.
+
+EQ is created from existing Levels.
+
+EQ never becomes part of the Level Engine.
+
+EQ must have its own data model.
+
+There must not be a LEVEL_EQ.
+
+EQ must not be stored inside allLevels.
+
+---
+
+## EQ Creation Rules
+
+An EQ may be created only when every participating source Level satisfies:
+
+- Valid == true
+- Fresh == true
+- Same Direction
+- Same Price
+- Allowed Level Type
+- Allowed Timeframe
+
+Price comparison is exact.
+
+No tolerance is used.
+
+EQ price = source Level price.
+
+Since all source Levels must have the same price, no averaging is required.
+
+---
+
+## Timeframe Design
+
+The EQ Engine must support configurable timeframe combinations.
+
+Timeframes must never be hardcoded.
+
+Future examples include:
+
+- H1 + M30
+- H4 + H1
+- H4 + H1 + M30
+
+The architecture must support additional timeframes in future milestones.
+
+---
+
+## Current Strategy Configuration
+
+The current trading strategy uses:
+
+Primary Timeframe
+
+- H1 Classic
+
+Secondary Timeframe
+
+- M30 Classic
+- M30 GAP
+
+This is a Strategy configuration only.
+
+It must not be hardcoded into the EQ Engine.
+
+---
+
+## EQ Fresh
+
+Every newly created EQ starts as Fresh.
+
+EQ Fresh means the EQ price has not been touched after EQ creation.
+
+Touch is defined as:
+
+High >= EQ Price >= Low
+
+If price touches the EQ price after EQ creation:
+
+Fresh = false
+
+A non-Fresh EQ is no longer eligible for new trade setup generation.
+
+A non-Fresh EQ may still be rendered as historical context or order reference.
+
+Rendering of non-Fresh EQs is a Renderer policy, not EQ Engine logic.
+
+---
+
+## EQ Source Snapshot
+
+EQ is a snapshot of market confluence.
+
+Once an EQ is created:
+
+- Source Level IDs never change.
+- Source Level Types never change.
+- Source Timeframes never change.
+
+EQ never replaces one source Level with another.
+
+Example:
+
+H1 Classic + M30 Classic
+
+never becomes
+
+H1 Classic + M30 BO
+
+If later market structure creates:
+
+H1 BO + M30 BO
+
+that is a completely new EQ.
+
+The original EQ remains an independent snapshot.
+
+---
+
+## EQ Future Evolution
+
+If source Levels later evolve into new Level Types:
+
+Classic -> BO
+
+BO -> HNS
+
+those new Levels may participate in creating future EQs.
+
+Existing EQs never update their source Levels.
+
+---
+
+## Multiple EQs
+
+Multiple EQs are allowed.
+
+Duplicate EQ filtering is reserved for a future milestone.
+
+If multiple valid confluences exist, every valid EQ may be created.
+
+Multiple EQs at the same price are allowed for now.
+
+This may indicate stronger confluence and will be studied later.
+
+---
+
+## EQ Boundaries
+
+The EQ Engine never manages:
+
+- Orders
+- Pending Orders
+- Positions
+- Risk
+- Trade Management
+
+The Strategy decides:
+
+- Whether to trade an EQ
+- Whether to request orders
+- Whether to request order cancellation
+- Whether to request trade management actions
+- Whether to use Fresh EQ only
+- Whether to reference historical non-Fresh EQs
+
+Execution owns order and position lifecycle.
+
+Execution executes trade plans produced by Strategy.
+
+Execution must not modify Engine state.
+
+Renderer behavior will be defined in a later milestone.
+
+Fresh EQs may be rendered normally.
+
+Non-Fresh EQs may optionally be rendered differently as historical context or order reference.
+
+This is Renderer policy, not EQ Engine logic.
+
+---
+
+# 14. Design Principles
 
 Fresh and Valid are independent lifecycle states.
 
@@ -405,3 +606,31 @@ Allowed lifecycle state changes:
 - Valid
 
 Fresh, Valid, boCreated, and hnsCreated do not change a Level's identity.
+
+The Level Engine owns market structure.
+
+The EQ Engine owns confluence.
+
+The Strategy owns trading decisions.
+
+Execution owns order and position lifecycle.
+
+The Renderer owns visualization.
+
+The EQ Engine is read-only.
+
+The EQ Engine never modifies:
+
+- Levels
+- Level Fresh
+- Level Valid
+- Level lifecycle
+- Market structure
+
+The EQ Engine only consumes Level Engine output and produces EQ output.
+
+EQ represents a snapshot of market confluence.
+
+Existing EQs never modify their source Levels.
+
+Existing EQs never replace their source Levels.
