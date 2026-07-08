@@ -195,13 +195,13 @@ Completed
 - ✅ Milestone 3 — Fresh Lifecycle
 - ✅ Milestone 4 — BO Levels
 - ✅ Milestone 5 — Queue API + Dirty Renderer + Renderer Text
+- ✅ Milestone 6 — GAP Levels
 
 In Progress
 
-- 🚧 Milestone 6 — GAP Levels
+- 🚧 HNS
 
 Next
 
-- HNS
 - EQ
 - Strategy

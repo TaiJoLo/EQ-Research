@@ -86,8 +86,6 @@ Responsibilities
 
 • Duplicate handling
 
-• Active status
-
 • Valid status
 
 Output
@@ -166,7 +164,7 @@ Responsibilities
 
 Draw Levels.
 
-Delete inactive Levels.
+Delete non-renderable Levels.
 
 Display EQ.
 

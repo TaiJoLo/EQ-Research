@@ -30,9 +30,11 @@ Rendering and trading decisions belong to separate modules.
 
 | fresh | bool | Whether the Level has never been tested |
 
-| active | bool | Whether the Level should currently be used by downstream modules |
-
 | valid | bool | Whether the Level is still structurally valid |
+
+| boCreated | bool | Whether the Level has already created a BO Level |
+
+| hnsCreated | bool | Whether the Level has already created an HNS Level |
 
 | id | int | Unique identifier |
 
@@ -80,9 +82,11 @@ levelType
 
 fresh
 
-active
-
 valid
+
+boCreated
+
+hnsCreated
 
 These fields describe the current lifecycle of the Level.
 

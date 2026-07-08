@@ -1,5 +1,5 @@
 //@version=6
-indicator("EQ Engine", overlay = true, max_lines_count = 500)
+indicator("EQ Engine", overlay = true, max_lines_count = 500, max_labels_count = 500)
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -10,14 +10,15 @@ const int LINE_DISPLAY_OFFSET = 17
 const int TEXT_LABEL_OFFSET = 18
 const int FIRST_LEVEL_ID = 0
 const int INDEX_STEP = 1
+const int INDEX_NOT_FOUND = -1
 
 const bool INITIAL_FRESH = true
-const bool INITIAL_ACTIVE = true
 const bool INITIAL_VALID = true
 const bool INITIAL_BO_CREATED = false
+const bool INITIAL_HNS_CREATED = false
 
-const color SUPPORT_COLOR = color.teal
-const color RESISTANCE_COLOR = color.orange
+const color SUPPORT_COLOR = color.rgb(0, 136, 122)
+const color RESISTANCE_COLOR = color.rgb(125, 75, 0)
 
 const int LEVEL_LINE_WIDTH = 1
 
@@ -44,9 +45,9 @@ type Level
     int creationBar
     int levelType
     bool fresh
-    bool active
     bool valid
     bool boCreated
+    bool hnsCreated
 
 // ---------------------------------------------------------------------------
 // Candle Functions
@@ -117,20 +118,31 @@ detectGap() =>
 
     [detected, levelPrice, direction, levelType]
 
-isSupportBroken(Level level) =>
-    close < level.price
+isLevelTouched(Level level) =>
+    high >= level.price and low <= level.price
 
-isResistanceBroken(Level level) =>
-    close > level.price
+isLevelBroken(Level level) =>
+    bool broken = false
+
+    if level.direction == SUPPORT
+        broken := close < level.price
+    else if level.direction == RESISTANCE
+        broken := close > level.price
+
+    broken
+
+isLevelRejected(Level level) =>
+    isLevelTouched(level) and not isLevelBroken(level)
 
 isBOCandidate(Level level) =>
     level.levelType == LEVEL_CLASSIC and not level.boCreated and bar_index > level.creationBar
 
-detectBO(array<Level> levels, array<int> boCandidates) =>
-    bool detected = false
-    float levelPrice = na
-    int direction = na
-    int levelType = LEVEL_BO
+detectBO(array<Level> levels, array<int> boCandidates, array<float> boPrices, array<int> boDirections, array<int> boSourceIndexes, array<int> boCreationBars) =>
+    array.clear(boPrices)
+    array.clear(boDirections)
+    array.clear(boSourceIndexes)
+    array.clear(boCreationBars)
+
     int candidateCount = array.size(boCandidates)
 
     if candidateCount > 0
@@ -138,17 +150,55 @@ detectBO(array<Level> levels, array<int> boCandidates) =>
             int levelIndex = array.get(boCandidates, candidateIndex)
             Level level = array.get(levels, levelIndex)
 
-            if not detected and isBOCandidate(level)
-                if level.direction == SUPPORT and isSupportBroken(level)
-                    detected := true
-                    levelPrice := level.price
-                    direction := RESISTANCE
-                else if level.direction == RESISTANCE and isResistanceBroken(level)
-                    detected := true
-                    levelPrice := level.price
-                    direction := SUPPORT
+            if isBOCandidate(level)
+                if level.direction == SUPPORT and isLevelBroken(level)
+                    array.push(boPrices, level.price)
+                    array.push(boDirections, RESISTANCE)
+                    array.push(boSourceIndexes, levelIndex)
+                    array.push(boCreationBars, bar_index)
+                else if level.direction == RESISTANCE and isLevelBroken(level)
+                    array.push(boPrices, level.price)
+                    array.push(boDirections, SUPPORT)
+                    array.push(boSourceIndexes, levelIndex)
+                    array.push(boCreationBars, bar_index)
 
-    [detected, levelPrice, direction, levelType]
+    array.size(boPrices)
+
+isHNSCandidate(Level level) =>
+    level.levelType == LEVEL_BO and not level.hnsCreated and bar_index > level.creationBar
+
+isSupportBOBrokenForHNS(Level level) =>
+    isLevelBroken(level)
+
+isResistanceBOBrokenForHNS(Level level) =>
+    isLevelBroken(level)
+
+detectHNS(array<Level> levels, array<int> hnsCandidates, array<float> hnsPrices, array<int> hnsDirections, array<int> hnsSourceIndexes, array<int> hnsCreationBars) =>
+    array.clear(hnsPrices)
+    array.clear(hnsDirections)
+    array.clear(hnsSourceIndexes)
+    array.clear(hnsCreationBars)
+
+    int candidateCount = array.size(hnsCandidates)
+
+    if candidateCount > 0
+        for candidateIndex = FIRST_LEVEL_ID to candidateCount - INDEX_STEP
+            int levelIndex = array.get(hnsCandidates, candidateIndex)
+            Level level = array.get(levels, levelIndex)
+
+            if isHNSCandidate(level)
+                if level.direction == SUPPORT and isSupportBOBrokenForHNS(level)
+                    array.push(hnsPrices, level.price)
+                    array.push(hnsDirections, RESISTANCE)
+                    array.push(hnsSourceIndexes, levelIndex)
+                    array.push(hnsCreationBars, bar_index)
+                else if level.direction == RESISTANCE and isResistanceBOBrokenForHNS(level)
+                    array.push(hnsPrices, level.price)
+                    array.push(hnsDirections, SUPPORT)
+                    array.push(hnsSourceIndexes, levelIndex)
+                    array.push(hnsCreationBars, bar_index)
+
+    array.size(hnsPrices)
 
 // ---------------------------------------------------------------------------
 // Creation
@@ -162,9 +212,9 @@ createLevel(int levelId, float levelPrice, int direction, int levelType, int cre
          creationBar,
          levelType,
          INITIAL_FRESH,
-         INITIAL_ACTIVE,
          INITIAL_VALID,
-         INITIAL_BO_CREATED)
+         INITIAL_BO_CREATED,
+         INITIAL_HNS_CREATED)
 
 // ---------------------------------------------------------------------------
 // Level Manager
@@ -173,6 +223,15 @@ createLevel(int levelId, float levelPrice, int direction, int levelType, int cre
 var array<Level> allLevels = array.new<Level>()
 var array<int> freshCandidateIndexes = array.new<int>()
 var array<int> boCandidateIndexes = array.new<int>()
+var array<float> boCreationPrices = array.new<float>()
+var array<int> boCreationDirections = array.new<int>()
+var array<int> boCreationSourceIndexes = array.new<int>()
+var array<int> boCreationBars = array.new<int>()
+var array<int> hnsCandidateIndexes = array.new<int>()
+var array<float> hnsCreationPrices = array.new<float>()
+var array<int> hnsCreationDirections = array.new<int>()
+var array<int> hnsCreationSourceIndexes = array.new<int>()
+var array<int> hnsCreationBars = array.new<int>()
 var array<int> dirtyRenderIndexes = array.new<int>()
 var int nextId = FIRST_LEVEL_ID
 
@@ -182,9 +241,18 @@ queueFreshCandidate(int levelIndex) =>
 queueBOCandidate(int levelIndex) =>
     array.push(boCandidateIndexes, levelIndex)
 
+queueHNSCandidate(int levelIndex) =>
+    array.push(hnsCandidateIndexes, levelIndex)
+
 queueDirtyRender(int levelIndex) =>
     if not array.includes(dirtyRenderIndexes, levelIndex)
         array.push(dirtyRenderIndexes, levelIndex)
+
+removeFreshCandidate(int levelIndex) =>
+    int candidateIndex = array.indexof(freshCandidateIndexes, levelIndex)
+
+    if candidateIndex != INDEX_NOT_FOUND
+        array.remove(freshCandidateIndexes, candidateIndex)
 
 addLevel(Level level) =>
     int levelIndex = array.size(allLevels)
@@ -197,24 +265,18 @@ addLevel(Level level) =>
     if level.levelType == LEVEL_CLASSIC
         queueBOCandidate(levelIndex)
 
+    if level.levelType == LEVEL_BO
+        queueHNSCandidate(levelIndex)
+
 // ---------------------------------------------------------------------------
 // Lifecycle
 // ---------------------------------------------------------------------------
-
-isSupportTouched(Level level) =>
-    low <= level.price
-
-isResistanceTouched(Level level) =>
-    high >= level.price
 
 checkLevelTouch(Level level) =>
     bool touched = false
 
     if bar_index > level.creationBar
-        if level.direction == SUPPORT
-            touched := isSupportTouched(level)
-        else if level.direction == RESISTANCE
-            touched := isResistanceTouched(level)
+        touched := isLevelTouched(level)
 
     touched
 
@@ -236,22 +298,31 @@ updateLevels() =>
 
             candidateIndex -= INDEX_STEP
 
-markBOCreated(array<Level> levels, array<int> boCandidates, float levelPrice, int boDirection) =>
-    int candidateCount = array.size(boCandidates)
-    int sourceDirection = boDirection == SUPPORT ? RESISTANCE : SUPPORT
-    bool updated = false
+markBOCreated(array<Level> levels, array<int> boCandidates, int sourceIndex) =>
+    Level level = array.get(levels, sourceIndex)
+    level.boCreated := true
+    level.valid := false
+    array.set(levels, sourceIndex, level)
+    queueDirtyRender(sourceIndex)
+    removeFreshCandidate(sourceIndex)
 
-    if candidateCount > 0
-        for candidateIndex = FIRST_LEVEL_ID to candidateCount - INDEX_STEP
-            if not updated
-                int levelIndex = array.get(boCandidates, candidateIndex)
-                Level level = array.get(levels, levelIndex)
+    int candidateIndex = array.indexof(boCandidates, sourceIndex)
 
-                if isBOCandidate(level) and level.price == levelPrice and level.direction == sourceDirection
-                    level.boCreated := true
-                    array.set(levels, levelIndex, level)
-                    array.remove(boCandidates, candidateIndex)
-                    updated := true
+    if candidateIndex != INDEX_NOT_FOUND
+        array.remove(boCandidates, candidateIndex)
+
+markHNSCreated(array<Level> levels, array<int> hnsCandidates, int sourceIndex) =>
+    Level level = array.get(levels, sourceIndex)
+    level.hnsCreated := true
+    level.valid := false
+    array.set(levels, sourceIndex, level)
+    queueDirtyRender(sourceIndex)
+    removeFreshCandidate(sourceIndex)
+
+    int candidateIndex = array.indexof(hnsCandidates, sourceIndex)
+
+    if candidateIndex != INDEX_NOT_FOUND
+        array.remove(hnsCandidates, candidateIndex)
 
 // ---------------------------------------------------------------------------
 // Renderer
@@ -304,7 +375,7 @@ getLevelText(Level level) =>
     getLevelTypeText(level.levelType) + "-" + getDirectionText(level.direction)
 
 shouldRenderLevel(Level level) =>
-    level.valid and level.active and level.fresh
+    level.valid and level.fresh
 
 renderLevel(Level level, array<line> lines, array<bool> rendered, array<label> textLabels) =>
     int lineIndex = level.id
@@ -387,13 +458,37 @@ if barstate.isconfirmed
         addLevel(gapLevel)
         nextId += 1
 
-    [boDetected, boPrice, boDirection, boLevelType] = detectBO(allLevels, boCandidateIndexes)
+    detectBO(allLevels, boCandidateIndexes, boCreationPrices, boCreationDirections, boCreationSourceIndexes, boCreationBars)
 
-    if boDetected
-        Level boLevel = createLevel(nextId, boPrice, boDirection, boLevelType, bar_index)
-        addLevel(boLevel)
-        markBOCreated(allLevels, boCandidateIndexes, boPrice, boDirection)
-        nextId += 1
+    int boCreationCount = array.size(boCreationPrices)
+
+    if boCreationCount > 0
+        for boCreationIndex = FIRST_LEVEL_ID to boCreationCount - INDEX_STEP
+            float boPrice = array.get(boCreationPrices, boCreationIndex)
+            int boDirection = array.get(boCreationDirections, boCreationIndex)
+            int boSourceIndex = array.get(boCreationSourceIndexes, boCreationIndex)
+            int boCreationBar = array.get(boCreationBars, boCreationIndex)
+            Level boLevel = createLevel(nextId, boPrice, boDirection, LEVEL_BO, boCreationBar)
+
+            markBOCreated(allLevels, boCandidateIndexes, boSourceIndex)
+            addLevel(boLevel)
+            nextId += 1
+
+    detectHNS(allLevels, hnsCandidateIndexes, hnsCreationPrices, hnsCreationDirections, hnsCreationSourceIndexes, hnsCreationBars)
+
+    int hnsCreationCount = array.size(hnsCreationPrices)
+
+    if hnsCreationCount > 0
+        for hnsCreationIndex = FIRST_LEVEL_ID to hnsCreationCount - INDEX_STEP
+            float hnsPrice = array.get(hnsCreationPrices, hnsCreationIndex)
+            int hnsDirection = array.get(hnsCreationDirections, hnsCreationIndex)
+            int hnsSourceIndex = array.get(hnsCreationSourceIndexes, hnsCreationIndex)
+            int hnsCreationBar = array.get(hnsCreationBars, hnsCreationIndex)
+            Level hnsLevel = createLevel(nextId, hnsPrice, hnsDirection, LEVEL_HNS, hnsCreationBar)
+
+            markHNSCreated(allLevels, hnsCandidateIndexes, hnsSourceIndex)
+            addLevel(hnsLevel)
+            nextId += 1
 
 renderDirtyLevels(allLevels, dirtyRenderIndexes, levelLines, renderedLevels, levelTextLabels)
 

@@ -27,7 +27,7 @@ Each Level Type is independent.
 
 A Level never changes its identity after creation.
 
-When market structure evolves, the Engine creates a new Level instead of modifying an existing one.
+When market structure evolves, the Engine creates a new Level instead of modifying an existing Level's identity or Level Type.
 
 ---
 
@@ -67,13 +67,13 @@ Bull Candle
 
 Level Price
 
-Close of the first (Bear) candle.
+Close of the first Bear candle.
 
 Direction
 
 Support
 
-The Level is confirmed only after the second (Bull) candle closes.
+The Level is confirmed only after the second Bull candle closes.
 
 ---
 
@@ -89,13 +89,13 @@ Bear Candle
 
 Level Price
 
-Close of the first (Bull) candle.
+Close of the first Bull candle.
 
 Direction
 
 Resistance
 
-The Level is confirmed only after the second (Bear) candle closes.
+The Level is confirmed only after the second Bear candle closes.
 
 ---
 
@@ -117,13 +117,13 @@ Bull Candle
 
 Level Price
 
-Close of the first (Bull) candle.
+Close of the first Bull candle.
 
 Direction
 
 Support
 
-The Level is confirmed only after the second (Bull) candle closes.
+The Level is confirmed only after the second Bull candle closes.
 
 ---
 
@@ -139,13 +139,13 @@ Bear Candle
 
 Level Price
 
-Close of the first (Bear) candle.
+Close of the first Bear candle.
 
 Direction
 
 Resistance
 
-The Level is confirmed only after the second (Bear) candle closes.
+The Level is confirmed only after the second Bear candle closes.
 
 ---
 
@@ -153,21 +153,110 @@ The Level is confirmed only after the second (Bear) candle closes.
 
 Every newly created Level starts as Fresh.
 
-Fresh remains true until the first touch after the creation candle.
+Fresh means a Level has not been touched after its creation candle.
+
+The creation candle of every newly created Level is ignored.
+
+Any touch after the creation candle immediately removes Fresh.
+
+Fresh applies to every Level Type.
+
+Fresh does not control evolution.
+
+A non-Fresh Classic Level may still create a BO Level.
+
+A non-Fresh BO Level may still create an HNS Level.
+
+---
+
+# 7. Level Events
+
+Fresh, Valid, and Evolution are separate concepts.
+
+Touch controls Fresh.
+
+Break controls structural evolution.
+
+Valid controls whether the source Level is still a current market structure.
+
+Renderer displays only Levels where:
+
+valid && fresh
+
+## Touch
+
+Touch is an intrabar event.
 
 Touch is defined as:
 
 High >= Level >= Low
 
-Any touch removes Fresh.
+If any Level is touched after its creation candle:
 
-The creation candle of every newly created Level is ignored.
+fresh = false
 
-Fresh applies to every Level Type.
+## Break
+
+Break is a close event.
+
+Support Break
+
+Close < Level Price
+
+Resistance Break
+
+Close > Level Price
+
+Break is evaluated only after the candle closes.
+
+Break creates new market structure when an evolution rule exists.
+
+Break does not mutate Level identity or Level Type.
+
+## Reject
+
+Reject is a close event.
+
+Reject occurs when:
+
+- touched == true
+- broken == false
+
+If a Level is rejected:
+
+- No new Level is created.
+- The source Level remains valid.
+- Fresh is false because the Level was touched.
+
+## State Effects
+
+If any Level is touched after its creation candle:
+
+fresh = false
+
+If a Classic Level is broken:
+
+- Create a BO Level.
+- Set the source Classic Level valid = false.
+- The source Classic keeps its original ID, price, direction, and Level Type.
+
+If a BO Level is broken:
+
+- Create an HNS Level.
+- Set the source BO Level valid = false.
+- The source BO keeps its original ID, price, direction, and Level Type.
+
+HNS is terminal.
+
+HNS does not create another Level Type.
+
+If an HNS Level is touched after its creation candle:
+
+fresh = false
 
 ---
 
-# 7. Break
+# 8. Break
 
 A Break occurs when price closes beyond a Level.
 
@@ -183,15 +272,23 @@ Break is evaluated only after the candle closes.
 
 Only a confirmed candle close may create a new market structure.
 
+Break creates new market structure when an evolution rule exists.
+
+Break does not mutate Level identity or Level Type.
+
 ---
 
-# 8. BO Level
+# 9. BO Level
 
 A BO Level is created when a Classic Level is broken.
 
-The original Classic Level remains unchanged.
+The source Classic Level does not need to be Fresh to create a BO Level.
 
-The BO Level is a new Level.
+The source Classic Level becomes valid = false.
+
+The source Classic keeps its original ID, price, direction, and Level Type.
+
+The BO Level is a newly created Level.
 
 BO Level properties
 
@@ -205,29 +302,63 @@ Every BO Level starts as Fresh.
 
 ---
 
-# 9. HNS Level
+# 10. HNS Level
 
 An HNS Level is created when a BO Level is broken.
 
-The original BO Level remains unchanged.
+The source BO Level does not need to be Fresh to create an HNS Level.
 
-The HNS Level is a new Level.
+The source BO Level becomes valid = false.
 
-HNS Level properties
+The source BO keeps its original ID, price, direction, and Level Type.
 
-- Same Price
-- Opposite Direction
-- Level Type = LEVEL_HNS
+The HNS Level is a newly created Level.
 
 Every BO Level may create at most one HNS Level.
 
 Every HNS Level starts as Fresh.
 
+Break is confirmed only after the candle closes.
+
+HNS is terminal.
+
+HNS does not create any further Level Type.
+
 ---
 
-# 10. Invalid Levels
+## Support HNS
 
-The invalidation rules for HNS and future Level Types will be defined in a later version.
+Source Level
+
+Resistance BO
+
+Break
+
+Close above the BO Level.
+
+HNS Level properties
+
+- Same Price
+- Direction = Support
+- Level Type = LEVEL_HNS
+
+---
+
+## Resistance HNS
+
+Source Level
+
+Support BO
+
+Break
+
+Close below the BO Level.
+
+HNS Level properties
+
+- Same Price
+- Direction = Resistance
+- Level Type = LEVEL_HNS
 
 ---
 
@@ -250,72 +381,27 @@ Every Level contains:
 - Direction
 - Level Type
 - Fresh
-- Active
 - Valid
 - boCreated
+- hnsCreated
 
-Additional lifecycle fields may be introduced in future versions without changing the identity of a Level.
-
----
-
-# 13. Processing Order
-
-For every confirmed candle close, the Engine executes in the following order:
-
-1. Update Lifecycle
-
-2. Detect Market Levels
-
-   - Classic
-   - GAP
-   - BO
-   - HNS
-
-3. Render Levels
-
-Future milestones may extend the detection stage without restructuring the execution pipeline.
+boCreated and hnsCreated are internal Engine state.
 
 ---
 
-# 14. Engine Principles
+# 13. Design Principles
 
-The Engine only describes market structure.
+Fresh and Valid are independent lifecycle states.
 
-The Engine never generates trading signals.
+A Level may remain Valid after it is no longer Fresh.
 
-Every valid Level exists independently of any Strategy.
+When a Level evolves into a new market structure, the source Level becomes invalid.
 
-The Engine owns market structure.
-
-The Strategy consumes Engine output.
-
-The Renderer visualizes Engine output only.
-
-The Engine never consumes Strategy output.
-
----
-
-# 15. Design Principles
-
-Every new market structure is represented by creating a new Level.
-
-Existing Levels never change their identity.
-
-Only lifecycle state may change.
+Existing Levels never change identity or Level Type.
 
 Allowed lifecycle state changes:
 
 - Fresh
-- Active
 - Valid
 
-Lifecycle state changes never modify the identity of a Level.
-
-Immutable Level properties:
-
-- ID
-- Creation Time
-- Timeframe
-- Price
-- Direction
-- Level Type
+Fresh, Valid, boCreated, and hnsCreated do not change a Level's identity.

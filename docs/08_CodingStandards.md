@@ -99,8 +99,9 @@ A Level may change its lifecycle state, but never its identity.
 
 Allowed:
 - fresh
-- active
 - valid
+- boCreated
+- hnsCreated
 
 Immutable:
 - id
@@ -188,9 +189,9 @@ Lifecycle is responsible only for updating Level state.
 Lifecycle may update:
 
 - fresh
-- active
 - valid
 - boCreated
+- hnsCreated
 
 Lifecycle must never:
 
@@ -208,11 +209,14 @@ Allowed transitions:
 fresh:
 true → false
 
-active:
-true → false
-
 valid:
 true → false
+
+boCreated:
+false → true
+
+hnsCreated:
+false → true
 
 Reverse transitions are not allowed unless explicitly defined by a future milestone.
 
@@ -328,9 +332,16 @@ Renderer must never modify:
 
 - price
 - fresh
-- active
 - valid
 - levelType
+
+## Renderer Colors
+
+Use the following fixed renderer colors:
+
+SUPPORT_COLOR = color.rgb(0, 136, 122)
+
+RESISTANCE_COLOR = color.rgb(125, 75, 0)
 
 ---
 
